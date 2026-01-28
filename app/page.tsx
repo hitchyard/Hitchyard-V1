@@ -1,3 +1,4 @@
+"use client";
 import React, { useState } from 'react';
 import { submitHitchyardLead } from '../lib/supabase-actions';
 import Image from 'next/image';
