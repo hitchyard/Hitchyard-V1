@@ -1,16 +1,18 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState } from "react"
 
-function DiagnosticCard({
+function CheckMyLoadForm({
   onScoreCalculated,
 }: {
   onScoreCalculated: (score: number) => void
 }) {
   const [palletCount, setPalletCount] = useState<string>("")
   const [originZip, setOriginZip] = useState<string>("")
-  const [carrierReliability, setCarrierReliability] = useState<number>(50)
+  const [companyName, setCompanyName] = useState<string>("")
+  const [email, setEmail] = useState<string>("")
   const [score, setScore] = useState<number | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const isValidUtahZip = (zip: string): boolean => {
     const zipNum = parseInt(zip, 10)
@@ -18,67 +20,83 @@ function DiagnosticCard({
   }
 
   const calculateScore = () => {
-    if (!palletCount || !originZip) return
+    setErrorMessage(null)
+
+    if (!palletCount || !originZip) {
+      setErrorMessage("Please fill in all required fields.")
+      return
+    }
 
     const pallets = parseInt(palletCount, 10)
-    if (pallets < 1 || pallets > 10) return
-    if (!isValidUtahZip(originZip)) return
-
-    // Score calculation logic
-    let calculatedScore = 0
-
-    // Pallet count scoring (optimal range 4-10)
-    if (pallets >= 4 && pallets <= 10) {
-      calculatedScore += 40
-    } else if (pallets >= 1 && pallets <= 3) {
-      calculatedScore += 20
+    
+    // Minimum 4 pallets requirement
+    if (pallets < 4) {
+      setErrorMessage("Minimum 4 pallets for box trucks, Sprinters, or cargo vans.")
+      setScore(null)
+      return
     }
 
-    // Carrier reliability contributes directly
-    calculatedScore += carrierReliability * 0.4
+    if (pallets > 10) {
+      setErrorMessage("Maximum 10 pallets for this service.")
+      setScore(null)
+      return
+    }
 
-    // Utah ZIP bonus (core Utah areas)
+    if (!isValidUtahZip(originZip)) {
+      setErrorMessage("Please enter a valid Utah ZIP code (84xxx).")
+      setScore(null)
+      return
+    }
+
+    // HPS Formula: (Reliability * 0.4) + (Efficiency * 0.3) + (Relationship * 0.2) + (Match Success * 0.1)
+    // Simplified calculation based on available inputs
+    const reliability = 85 // Base reliability score
+    const efficiency = Math.min(100, 70 + (pallets - 4) * 5) // Higher efficiency for more pallets
+    const relationship = 75 // Base relationship score
+    
+    // Match success based on ZIP (core Wasatch Front areas score higher)
     const zipNum = parseInt(originZip, 10)
+    let matchSuccess = 70
     if (zipNum >= 84101 && zipNum <= 84199) {
-      calculatedScore += 20 // Salt Lake City area
+      matchSuccess = 95 // Salt Lake City area
     } else if (zipNum >= 84601 && zipNum <= 84699) {
-      calculatedScore += 18 // Provo/Utah County area
-    } else {
-      calculatedScore += 15 // Other Utah areas
+      matchSuccess = 90 // Provo/Utah County area
+    } else if (zipNum >= 84401 && zipNum <= 84499) {
+      matchSuccess = 88 // Ogden area
     }
 
-    const finalScore = Math.min(100, Math.round(calculatedScore))
+    const hpsScore = Math.round(
+      (reliability * 0.4) + (efficiency * 0.3) + (relationship * 0.2) + (matchSuccess * 0.1)
+    )
+
+    const finalScore = Math.min(100, hpsScore)
     setScore(finalScore)
     onScoreCalculated(finalScore)
   }
 
-  const interpretation = useMemo(() => {
-    if (score === null) return null
-    if (score >= 80) return "Operationally efficient"
-    if (score >= 50) return "Moderate inefficiencies detected"
-    return "Freight misalignment likely"
-  }, [score])
-
   return (
-    <div className="border border-steel-blue/30 p-8">
-      <div className="space-y-6">
+    <div className="border border-border-subtle/40 p-6 md:p-8">
+      <h2 className="text-xl font-medium text-foreground mb-6">Check My Load</h2>
+      
+      <div className="space-y-5">
         {/* Pallet Count */}
         <div>
           <label
             htmlFor="pallet-count"
-            className="block text-sm font-medium text-foreground mb-2"
+            className="block text-sm text-muted-foreground mb-2"
           >
-            Pallet Count
+            Pallet Count (4-10)
           </label>
           <input
             id="pallet-count"
+            name="pallet_count"
             type="number"
-            min="1"
+            min="4"
             max="10"
-            placeholder="1–10 pallets"
+            placeholder="4–10 pallets"
             value={palletCount}
             onChange={(e) => setPalletCount(e.target.value)}
-            className="w-full border border-steel-blue/30 px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-steel-blue bg-background"
+            className="w-full border border-border-subtle/40 px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-steel-blue bg-background"
           />
         </div>
 
@@ -86,12 +104,13 @@ function DiagnosticCard({
         <div>
           <label
             htmlFor="origin-zip"
-            className="block text-sm font-medium text-foreground mb-2"
+            className="block text-sm text-muted-foreground mb-2"
           >
             Origin ZIP Code
           </label>
           <input
             id="origin-zip"
+            name="origin_zip"
             type="text"
             inputMode="numeric"
             pattern="[0-9]*"
@@ -101,55 +120,76 @@ function DiagnosticCard({
             onChange={(e) =>
               setOriginZip(e.target.value.replace(/\D/g, "").slice(0, 5))
             }
-            className="w-full border border-steel-blue/30 px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-steel-blue bg-background"
+            className="w-full border border-border-subtle/40 px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-steel-blue bg-background"
           />
         </div>
 
-        {/* Carrier Reliability Slider */}
+        {/* Company Name (optional) */}
         <div>
           <label
-            htmlFor="carrier-reliability"
-            className="block text-sm font-medium text-foreground mb-2"
+            htmlFor="company-name"
+            className="block text-sm text-muted-foreground mb-2"
           >
-            Carrier Reliability
-            <span className="ml-2 text-muted-foreground font-normal">
-              {carrierReliability}%
-            </span>
+            Company Name (optional)
           </label>
           <input
-            id="carrier-reliability"
-            type="range"
-            min="0"
-            max="100"
-            value={carrierReliability}
-            onChange={(e) => setCarrierReliability(parseInt(e.target.value, 10))}
-            className="w-full h-2 bg-secondary appearance-none cursor-pointer accent-steel-blue"
+            id="company-name"
+            name="company_name"
+            type="text"
+            placeholder="Your company"
+            value={companyName}
+            onChange={(e) => setCompanyName(e.target.value)}
+            className="w-full border border-border-subtle/40 px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-steel-blue bg-background"
           />
-          <div className="flex justify-between text-xs text-muted-foreground mt-1">
-            <span>0</span>
-            <span>100</span>
-          </div>
         </div>
 
-        {/* Calculate Button */}
+        {/* Email (optional) */}
+        <div>
+          <label
+            htmlFor="email"
+            className="block text-sm text-muted-foreground mb-2"
+          >
+            Email (optional)
+          </label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            placeholder="you@company.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full border border-border-subtle/40 px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-steel-blue bg-background"
+          />
+        </div>
+
+        {/* Error Message */}
+        {errorMessage && (
+          <p className="text-sm text-red-400">{errorMessage}</p>
+        )}
+
+        {/* Check My Load Button */}
         <button
           type="button"
           onClick={calculateScore}
-          className="w-full border border-steel-blue text-steel-blue py-3 font-medium hover:bg-steel-blue hover:text-white transition-colors"
+          className="w-full bg-steel-blue text-primary-foreground py-3 font-medium hover:bg-steel-blue/90 transition-colors"
         >
-          Calculate Score
+          Check My Load
         </button>
 
         {/* Score Output */}
         {score !== null && (
-          <div className="pt-6 border-t border-steel-blue/30">
+          <div className="pt-6 border-t border-border-subtle/40">
             <p className="text-sm text-muted-foreground mb-2">
-              Hitchyard Performance Score
+              Hitchyard Performance Score (HPS)
             </p>
             <p className="text-5xl font-light text-foreground tracking-tight">
               {score}
             </p>
-            <p className="text-sm text-muted-foreground mt-3">{interpretation}</p>
+            <p className="text-sm text-muted-foreground mt-3">
+              {score >= 80 ? "Strong match for Hitchyard service" : 
+               score >= 60 ? "Good fit with some considerations" : 
+               "May require further evaluation"}
+            </p>
           </div>
         )}
       </div>
@@ -157,58 +197,58 @@ function DiagnosticCard({
   )
 }
 
-function TradeOffSection() {
+function VehicleTypes() {
   return (
-    <div className="border-t border-steel-blue/30 pt-12">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16">
-        {/* Focused On */}
-        <div>
-          <h3 className="text-sm font-medium text-foreground mb-4 tracking-wide uppercase">
-            Focused On
-          </h3>
-          <ul className="space-y-3 text-muted-foreground">
-            <li>Utah routes</li>
-            <li>Dry LTL (4–10 pallets)</li>
-            <li>Box trucks & sprinters</li>
-            <li>Predictable short-haul freight</li>
-          </ul>
-        </div>
-
-        {/* Intentionally Excluded */}
-        <div className="border-t border-steel-blue/30 pt-8 md:border-t-0 md:pt-0 md:border-l md:pl-16">
-          <h3 className="text-sm font-medium text-foreground mb-4 tracking-wide uppercase">
-            Intentionally Excluded
-          </h3>
-          <ul className="space-y-3 text-muted-foreground">
-            <li>Reefers</li>
-            <li>Hazmat</li>
-            <li>National spot freight</li>
-            <li>{"53' trailer volatility"}</li>
-          </ul>
-        </div>
-      </div>
+    <div className="border-t border-border-subtle/40 pt-10">
+      <h3 className="text-sm font-medium text-foreground mb-4 tracking-wide uppercase">
+        Vehicle Types
+      </h3>
+      <ul className="space-y-2 text-muted-foreground">
+        <li>Box Trucks</li>
+        <li>Sprinter Vans</li>
+        <li>Cargo Vans</li>
+      </ul>
     </div>
   )
 }
 
-function CTASection({ visible }: { visible: boolean }) {
-  if (!visible) return null
-
-  const handleSubmit = () => {
-    // Placeholder submit handler
-    console.log("Freight Fit Check requested")
-  }
+function FAQSection() {
+  const faqs = [
+    {
+      question: "What is Hitchyard?",
+      answer: "Hitchyard is a licensed freight broker operating in Utah. We connect shippers with reliable local trucks."
+    },
+    {
+      question: "Are you a motor carrier?",
+      answer: "No. Hitchyard is a freight broker only; we do not operate trucks ourselves."
+    },
+    {
+      question: "What shipments do you handle?",
+      answer: "We handle 4–10 pallet loads using Box Trucks, Sprinters, and Cargo Vans."
+    },
+    {
+      question: "Do you serve locations outside Utah?",
+      answer: "No. We focus exclusively on local Utah deliveries."
+    },
+    {
+      question: "Are there minimum requirements?",
+      answer: "All shipments are subject to minimum pallet counts and vehicle availability."
+    }
+  ]
 
   return (
-    <div className="text-center pt-12">
-      <button
-        type="button"
-        onClick={handleSubmit}
-        className="bg-steel-blue text-white px-8 py-4 font-medium tracking-wide hover:bg-steel-blue/90 transition-colors"
-      >
-        FREE FREIGHT FIT CHECK
-      </button>
-      <p className="text-xs text-muted-foreground mt-3">Utah shippers only.</p>
+    <div className="border-t border-border-subtle/40 pt-10">
+      <h3 className="text-sm font-medium text-foreground mb-6 tracking-wide uppercase">
+        FAQ
+      </h3>
+      <div className="space-y-6">
+        {faqs.map((faq, index) => (
+          <div key={index}>
+            <p className="text-foreground font-medium mb-1">Q: {faq.question}</p>
+            <p className="text-muted-foreground">A: {faq.answer}</p>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
@@ -224,35 +264,39 @@ export default function Page() {
     <main className="min-h-screen bg-background">
       <div className="max-w-[900px] mx-auto px-6 py-16 md:py-24">
         {/* Header */}
-        <header className="mb-16">
-          <p className="text-sm tracking-widest text-muted-foreground uppercase">
-            HITCHYARD — UTAH DRY FREIGHT, DONE RIGHT
+        <header className="mb-12">
+          <p className="text-sm tracking-widest text-muted-foreground uppercase mb-8">
+            HITCHYARD
+          </p>
+          <h1 className="text-3xl md:text-4xl font-medium text-foreground tracking-tight mb-4 text-balance">
+            UTAH DRY FREIGHT. RELIABLE, EVERY TIME.
+          </h1>
+          <p className="text-lg text-muted-foreground">
+            We move 4–10 pallets across the Wasatch Front. On-time pickup. Local expertise.
           </p>
         </header>
 
-        {/* Title Section */}
+        {/* Check My Load Form */}
         <section className="mb-12">
-          <h1 className="text-3xl md:text-4xl font-light text-foreground tracking-tight mb-3">
-            Freight Fit Check
-          </h1>
-          <p className="text-muted-foreground">
-            Evaluate whether your Utah dry freight shipment is operationally
-            efficient.
+          <CheckMyLoadForm onScoreCalculated={handleScoreCalculated} />
+        </section>
+
+        {/* Vehicle Types */}
+        <section className="mb-12">
+          <VehicleTypes />
+        </section>
+
+        {/* FAQ Section */}
+        <section className="mb-12">
+          <FAQSection />
+        </section>
+
+        {/* Footer */}
+        <footer className="border-t border-border-subtle/40 pt-10 text-center">
+          <p className="text-sm text-muted-foreground">
+            Serving Utah shippers only. Focused on local deliveries.
           </p>
-        </section>
-
-        {/* Diagnostic Card */}
-        <section className="mb-16">
-          <DiagnosticCard onScoreCalculated={handleScoreCalculated} />
-        </section>
-
-        {/* Trade-Off Section */}
-        <section className="mb-8">
-          <TradeOffSection />
-        </section>
-
-        {/* CTA */}
-        <CTASection visible={showCTA} />
+        </footer>
       </div>
     </main>
   )

@@ -8,8 +8,8 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'Hitchyard — Utah Dry Freight Diagnostic',
-  description: 'Evaluate whether your Utah dry freight shipment is operationally efficient with the Hitchyard Freight Fit Check.',
+  title: 'Hitchyard | Utah Freight for Box & Cargo Vans',
+  description: 'We move 4-10 pallets across the Wasatch Front. On-time pickup. Local expertise. Utah shippers only.',
   generator: 'v0.app',
   icons: {
     icon: [

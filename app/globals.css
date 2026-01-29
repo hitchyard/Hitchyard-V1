@@ -4,21 +4,22 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #FFFFFF;
-  --foreground: #1a1a1a;
-  --card: #FFFFFF;
-  --card-foreground: #1a1a1a;
-  --popover: #FFFFFF;
-  --popover-foreground: #1a1a1a;
-  --primary: #4a6b8a;
+  --background: #1C1C1E;
+  --foreground: #ECECEC;
+  --card: #1C1C1E;
+  --card-foreground: #ECECEC;
+  --popover: #1C1C1E;
+  --popover-foreground: #ECECEC;
+  --primary: #3B82F6;
   --primary-foreground: #FFFFFF;
-  --secondary: #f5f7f9;
-  --secondary-foreground: #1a1a1a;
-  --muted: #f5f7f9;
-  --muted-foreground: #5a5a5a;
-  --accent: #4a6b8a;
+  --secondary: #2a2a2c;
+  --secondary-foreground: #ECECEC;
+  --muted: #2a2a2c;
+  --muted-foreground: #A0A0A0;
+  --accent: #3B82F6;
   --accent-foreground: #FFFFFF;
-  --steel-blue: #4a6b8a;
+  --steel-blue: #3B82F6;
+  --border-subtle: #A0A0A0;
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
@@ -79,6 +80,7 @@
   --font-sans: 'Geist', 'Geist Fallback';
   --font-mono: 'Geist Mono', 'Geist Mono Fallback';
   --color-steel-blue: var(--steel-blue);
+  --color-border-subtle: var(--border-subtle);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
