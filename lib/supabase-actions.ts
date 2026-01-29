@@ -1,22 +1,17 @@
 import { createClient } from '@supabase/supabase-js'
 
-// Using the keys for project: xqvhryexmqfyhyuxnaer
-const supabaseUrl = 'https://xqvhryexmqfyhyuxnaer.supabase.co'
-const supabaseAnonKey = 'sb_publishable_JfiqphW7DOBJf3PdtvX5GA_ifJ6hwZD'
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-export async function submitHitchyardLead(email: string, reliability: number) {
-  // HPS Logic: (Reliability * 0.4) + Baseline (5.2)
-  const score = (reliability / 10 * 0.4) + 5.2;
-  
+export async function submitHitchyardLead(email: string, palletCount: number, zipCode: string) {
   const { data, error } = await supabase
     .from('leads')
     .insert([{ 
-      email, 
-      reported_reliability: reliability, 
-      hps_score: score 
+      email,
+      pallet_count: palletCount,
+      zip_code: zipCode
     }]);
-    
-  return { data, error, score: score.toFixed(1) };
+  return { data, error };
 }
