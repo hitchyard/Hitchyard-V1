@@ -5,11 +5,12 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-export async function submitHitchyardLead(email: string, palletCount: number, zipCode: string) {
+export async function submitHitchyardLead(email: string, companyName: string, palletCount: number, zipCode: string) {
   const { data, error } = await supabase
     .from('leads')
     .insert([{ 
       email,
+      company_name: companyName,
       pallet_count: palletCount,
       zip_code: zipCode
     }]);
