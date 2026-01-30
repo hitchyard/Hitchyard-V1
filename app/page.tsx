@@ -1,3 +1,163 @@
+"use client";
+
+import { useState } from "react";
+import { submitHitchyardLead } from '../lib/supabase-actions';
+
+function CheckMyLoadForm({
+  onScoreCalculated,
+}: {
+  onScoreCalculated: (score: number) => void;
+}) {
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLoading(true);
+    const formData = new FormData(e.currentTarget);
+    
+    const data = {
+      pallets: formData.get('pallets') as string,
+      weight: formData.get('weight') as string,
+      pickup: formData.get('pickup') as string,
+      delivery: formData.get('delivery') as string,
+      contact: formData.get('contact') as string,
+    };
+
+    try {
+      await submitHitchyardLead(data);
+      setSubmitted(true);
+      onScoreCalculated(95);
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (submitted) {
+    return (
+      <div className="bg-card border border-border-subtle p-8 rounded-2xl text-center">
+        <h3 className="text-xl font-medium text-foreground mb-2">Load Analysis Ready</h3>
+        <p className="text-muted-foreground">We've received your details. A dispatcher will contact you shortly with a quote.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-card border border-border-subtle p-8 rounded-2xl shadow-sm">
+      <h2 className="text-xl font-medium text-foreground mb-6">Check My Load</h2>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Pallets</label>
+            <input name="pallets" type="number" placeholder="4-10" required className="w-full bg-background border border-border-subtle rounded-lg px-4 py-3 focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-all" />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Weight (lbs)</label>
+            <input name="weight" type="number" placeholder="Max 10k" required className="w-full bg-background border border-border-subtle rounded-lg px-4 py-3 focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-all" />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Pickup City</label>
+          <input name="pickup" placeholder="e.g. Salt Lake City" required className="w-full bg-background border border-border-subtle rounded-lg px-4 py-3 focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-all" />
+        </div>
+        <div className="space-y-2">
+          <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Delivery City</label>
+          <input name="delivery" placeholder="e.g. Provo" required className="w-full bg-background border border-border-subtle rounded-lg px-4 py-3 focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-all" />
+        </div>
+        <div className="space-y-2">
+          <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Phone or Email</label>
+          <input name="contact" placeholder="How should we reach you?" required className="w-full bg-background border border-border-subtle rounded-lg px-4 py-3 focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-all" />
+        </div>
+        <button type="submit" disabled={loading} className="w-full bg-foreground text-background font-medium py-4 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 mt-4">
+          {loading ? "Analyzing..." : "Get Quote"}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+function VehicleTypes() {
+  return (
+    <div className="border-t border-border-subtle/40 pt-10">
+      <h3 className="text-sm font-medium text-foreground mb-4 tracking-wide uppercase">Vehicle Types</h3>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {['Box Trucks', 'Cargo Vans', 'Sprinters', 'Lift Gates'].map((type) => (
+          <div key={type} className="bg-card/50 border border-border-subtle/40 rounded-lg py-3 px-4 text-center">
+            <span className="text-sm text-muted-foreground">{type}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FAQSection() {
+  const faqs = [
+    {
+      question: "What is Hitchyard?",
+      answer: "We are a local Utah freight specialist focused on partial loads (4-10 pallets) that are too big for couriers but too small for full semis."
+    },
+    {
+      question: "Where do you operate?",
+      answer: "Primary focus is the Wasatch Front (Ogden to Payson), with extended service to St. George and Cedar City."
+    }
+  ];
+
+  return (
+    <div className="border-t border-border-subtle/40 pt-10 mt-20">
+      <h3 className="text-sm font-medium text-foreground mb-8 tracking-wide uppercase">Common Questions</h3>
+      <div className="grid gap-8">
+        {faqs.map((faq) => (
+          <div key={faq.question}>
+            <h4 className="text-base font-medium text-foreground mb-2">{faq.question}</h4>
+            <p className="text-muted-foreground text-sm leading-relaxed">{faq.answer}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function Page() {
+  const [showCTA, setShowCTA] = useState(false);
+
+  const handleScoreCalculated = (score: number) => {
+    setShowCTA(true);
+  };
+
+  return (
+    <main className="min-h-screen bg-background text-foreground">
+      <div className="max-w-[900px] mx-auto px-6 py-16 md:py-24">
+        {/* Header */}
+        <header className="mb-12">
+          <p className="text-sm tracking-[0.2em] text-muted-foreground uppercase mb-8">HITCHYARD</p>
+          <h1 className="text-4xl md:text-5xl font-medium tracking-tight mb-4 text-balance">
+            UTAH DRY FREIGHT. <br/>RELIABLE, EVERY TIME.
+          </h1>
+          <p className="text-lg text-muted-foreground max-w-md">
+            Moving 4–10 pallets across the Wasatch Front. Professional dispatch. Real-time updates.
+          </p>
+        </header>
+
+        {/* Form Section */}
+        <section className="mb-16">
+          <CheckMyLoadForm onScoreCalculated={handleScoreCalculated} />
+        </section>
+
+        {/* Footer Info */}
+        <VehicleTypes />
+        <FAQSection />
+
+        <footer className="mt-24 pt-8 border-t border-border-subtle/20">
+          <p className="text-xs text-muted-foreground/50">© 2024 Hitchyard Logistics. Utah, USA.</p>
+        </footer>
+      </div>
+    </main>
+  );
+}
 
 
 "use client";
