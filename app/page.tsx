@@ -1,14 +1,12 @@
-export const metadata = {
-  title: 'Hitchyard | Utah Freight for Box & Cargo Vans',
-};
+
 "use client";
-import { useState } from "react";
-import { submitHitchyardLead } from '../lib/supabase-actions';
+import React, { useState, ChangeEvent } from "react";
+import { submitHitchyardLead } from "@/lib/supabase-actions";
 
 function CheckMyLoadForm({
   onScoreCalculated,
 }: {
-  onScoreCalculated: (score: number) => void
+  onScoreCalculated: (score: number) => void;
 }) {
   const [palletCount, setPalletCount] = useState<string>("");
   const [originZip, setOriginZip] = useState<string>("");
@@ -24,7 +22,7 @@ function CheckMyLoadForm({
     return zip.length === 5 && zipNum >= 84001 && zipNum <= 84784;
   };
 
-  const calculateScore = async () => {
+  const calculateScore = async (): Promise<void> => {
     setErrorMessage(null);
 
     if (!palletCount || !originZip) {
@@ -71,8 +69,17 @@ function CheckMyLoadForm({
     setScore(finalScore);
     onScoreCalculated(finalScore);
 
-    // Save to Supabase
-    await submitHitchyardLead(email, companyName, pallets, originZip);
+    // Submit lead if email is provided
+    if (email) {
+      setSubmitting(true);
+      const { error } = await submitHitchyardLead(email, companyName, pallets, originZip);
+      setSubmitting(false);
+      if (!error) {
+        setSubmitted(true);
+      } else {
+        setErrorMessage("Submission failed. Please try again.");
+      }
+    }
   };
 
   return (
@@ -82,22 +89,22 @@ function CheckMyLoadForm({
         {/* Pallet Count */}
         <div>
           <label htmlFor="pallet-count" className="block text-sm text-muted-foreground mb-2">Pallet Count (4-10)</label>
-          <input id="pallet-count" name="pallet_count" type="number" min="4" max="10" placeholder="4–10 pallets" value={palletCount} onChange={(e) => setPalletCount(e.target.value)} className="w-full border border-border-subtle/40 px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-steel-blue bg-background" />
+          <input id="pallet-count" name="pallet_count" type="number" min="4" max="10" placeholder="4–10 pallets" value={palletCount} onChange={(e: ChangeEvent<HTMLInputElement>) => setPalletCount(e.target.value)} className="w-full border border-border-subtle/40 px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-steel-blue bg-background" />
         </div>
         {/* Origin ZIP Code */}
         <div>
           <label htmlFor="origin-zip" className="block text-sm text-muted-foreground mb-2">Origin ZIP Code</label>
-          <input id="origin-zip" name="origin_zip" type="text" inputMode="numeric" pattern="[0-9]*" maxLength={5} placeholder="Utah ZIP only (84xxx)" value={originZip} onChange={(e) => setOriginZip(e.target.value.replace(/\D/g, "").slice(0, 5))} className="w-full border border-border-subtle/40 px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-steel-blue bg-background" />
+          <input id="origin-zip" name="origin_zip" type="text" inputMode="numeric" pattern="[0-9]*" maxLength={5} placeholder="Utah ZIP only (84xxx)" value={originZip} onChange={(e: ChangeEvent<HTMLInputElement>) => setOriginZip(e.target.value.replace(/\D/g, "").slice(0, 5))} className="w-full border border-border-subtle/40 px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-steel-blue bg-background" />
         </div>
         {/* Company Name (optional) */}
         <div>
           <label htmlFor="company-name" className="block text-sm text-muted-foreground mb-2">Company Name (optional)</label>
-          <input id="company-name" name="company_name" type="text" placeholder="Your company" value={companyName} onChange={(e) => setCompanyName(e.target.value)} className="w-full border border-border-subtle/40 px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-steel-blue bg-background" />
+          <input id="company-name" name="company_name" type="text" placeholder="Your company" value={companyName} onChange={(e: ChangeEvent<HTMLInputElement>) => setCompanyName(e.target.value)} className="w-full border border-border-subtle/40 px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-steel-blue bg-background" />
         </div>
         {/* Email (optional) */}
         <div>
           <label htmlFor="email" className="block text-sm text-muted-foreground mb-2">Email (optional)</label>
-          <input id="email" name="email" type="email" placeholder="you@company.com" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border border-border-subtle/40 px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-steel-blue bg-background" />
+          <input id="email" name="email" type="email" placeholder="you@company.com" value={email} onChange={(e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)} className="w-full border border-border-subtle/40 px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-steel-blue bg-background" />
         </div>
         {/* Error Message */}
         {errorMessage && (<p className="text-sm text-red-400">{errorMessage}</p>)}
@@ -117,7 +124,7 @@ function CheckMyLoadForm({
   );
 }
 
-function VehicleTypes() {
+function VehicleTypes(): JSX.Element {
   return (
     <div className="border-t border-border-subtle/40 pt-10">
       <h3 className="text-sm font-medium text-foreground mb-4 tracking-wide uppercase">Vehicle Types</h3>
@@ -130,7 +137,7 @@ function VehicleTypes() {
   );
 }
 
-function FAQSection() {
+function FAQSection(): JSX.Element {
   const faqs = [
     {
       question: "What is Hitchyard?",
@@ -168,10 +175,10 @@ function FAQSection() {
   );
 }
 
-export default function Page() {
-  const [showCTA, setShowCTA] = useState(false);
+export default function Page(): JSX.Element {
+  const [showCTA, setShowCTA] = useState<boolean>(false);
 
-  const handleScoreCalculated = (score: number) => {
+  const handleScoreCalculated = (score: number): void => {
     setShowCTA(true);
   };
 
