@@ -2,6 +2,7 @@
 
 import { useState, ChangeEvent } from "react";
 import { submitHitchyardLead } from '../lib/supabase-actions';
+import { Calculator, Truck, MapPin, DollarSign, Weight, ChevronRight, CheckCircle2 } from "lucide-react";
 
 function CheckMyLoadForm({ onScoreCalculated }: { onScoreCalculated: (score: number) => void }) {
   const [formData, setFormData] = useState({ origin: "", destination: "", weight: "", payout: "" });
@@ -19,13 +20,7 @@ function CheckMyLoadForm({ onScoreCalculated }: { onScoreCalculated: (score: num
     const score = Math.min(Math.round((payoutNum / (weightNum || 1)) * 10), 100);
 
     try {
-      // UPDATED THIS LINE: Passing 4 arguments instead of 1 object
-      await submitHitchyardLead(
-        formData.origin, 
-        formData.destination, 
-        weightNum, 
-        payoutNum
-      );
+      await submitHitchyardLead(formData.origin, formData.destination, weightNum, payoutNum);
       onScoreCalculated(score);
     } catch (err) {
       console.error(err);
@@ -36,50 +31,91 @@ function CheckMyLoadForm({ onScoreCalculated }: { onScoreCalculated: (score: num
   };
 
   return (
-    <div className="bg-card border border-border rounded-2xl p-8 shadow-sm">
-      <form onSubmit={calculateScore} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <input name="origin" required placeholder="Origin" className="bg-background border p-3 rounded" onChange={handleChange} />
-        <input name="destination" required placeholder="Destination" className="bg-background border p-3 rounded" onChange={handleChange} />
-        <input name="weight" type="number" required placeholder="Weight (lbs)" className="bg-background border p-3 rounded" onChange={handleChange} />
-        <input name="payout" type="number" required placeholder="Payout ($)" className="bg-background border p-3 rounded" onChange={handleChange} />
-        <button type="submit" disabled={isSubmitting} className="md:col-span-2 bg-black text-white p-4 rounded font-bold">
-          {isSubmitting ? "Calculating..." : "Check My Load"}
+    <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-xl shadow-slate-200/50">
+      <form onSubmit={calculateScore} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="relative">
+            <MapPin className="absolute left-3 top-3.5 h-5 w-5 text-slate-400" />
+            <input name="origin" required placeholder="Origin City, UT" className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all" onChange={handleChange} />
+          </div>
+          <div className="relative">
+            <MapPin className="absolute left-3 top-3.5 h-5 w-5 text-slate-400" />
+            <input name="destination" required placeholder="Destination" className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all" onChange={handleChange} />
+          </div>
+          <div className="relative">
+            <Weight className="absolute left-3 top-3.5 h-5 w-5 text-slate-400" />
+            <input name="weight" type="number" required placeholder="Weight (lbs)" className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all" onChange={handleChange} />
+          </div>
+          <div className="relative">
+            <DollarSign className="absolute left-3 top-3.5 h-5 w-5 text-slate-400" />
+            <input name="payout" type="number" required placeholder="Payout ($)" className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all" onChange={handleChange} />
+          </div>
+        </div>
+        <button type="submit" disabled={isSubmitting} className="w-full bg-slate-900 hover:bg-slate-800 text-white p-4 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-50">
+          {isSubmitting ? (
+            "Analyzing Market Data..."
+          ) : (
+            <>
+              Check My Load <ChevronRight className="h-5 w-5" />
+            </>
+          )}
         </button>
       </form>
     </div>
   );
 }
 
-function VehicleTypes() {
-  return (
-    <div className="mt-10 border-t pt-10">
-      <h3 className="text-sm font-bold uppercase mb-4">Vehicle Types</h3>
-      <div className="flex gap-2">
-        {['Box Van', 'Cargo Van', 'Sprinter'].map(t => <span key={t} className="px-3 py-1 bg-gray-100 rounded-full text-xs">{t}</span>)}
-      </div>
-    </div>
-  );
-}
-
-function FAQSection() {
-  return (
-    <div className="mt-10">
-      <h2 className="text-xl font-bold mb-4">FAQ</h2>
-      <p className="text-sm text-gray-600">Specialized freight network for Utah owner-operators.</p>
-    </div>
-  );
-}
-
 export default function Page() {
   const [showCTA, setShowCTA] = useState(false);
+  
   return (
-    <main className="max-w-4xl mx-auto p-10">
-      <h1 className="text-4xl font-bold mb-4">Hitchyard</h1>
-      <p className="mb-10 text-gray-600">Is your load worth the drive?</p>
-      <CheckMyLoadForm onScoreCalculated={() => setShowCTA(true)} />
-      {showCTA && <div className="mt-4 p-4 bg-green-100 text-green-800 rounded">Lead submitted! We are checking market rates...</div>}
-      <VehicleTypes />
-      <FAQSection />
-    </main>
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-blue-100">
+      <main className="max-w-4xl mx-auto px-6 py-20">
+        <header className="text-center mb-16">
+          <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-full text-sm font-medium mb-6">
+            <Truck className="h-4 w-4" /> Built for Utah Owner-Operators
+          </div>
+          <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-b from-slate-900 to-slate-600">
+            Hitchyard
+          </h1>
+          <p className="text-xl text-slate-500 max-w-lg mx-auto leading-relaxed">
+            Stop guessing. Instantly see if your load is worth the diesel and the drive.
+          </p>
+        </header>
+
+        <CheckMyLoadForm onScoreCalculated={() => setShowCTA(true)} />
+
+        {showCTA && (
+          <div className="mt-8 p-6 bg-white border-2 border-green-100 rounded-2xl flex items-start gap-4 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="bg-green-100 p-2 rounded-full">
+              <CheckCircle2 className="h-6 w-6 text-green-600" />
+            </div>
+            <div>
+              <h3 className="font-bold text-green-900">Analysis Submitted!</h3>
+              <p className="text-green-700 text-sm">We're comparing your rate against Utah market averages. We'll be in touch shortly.</p>
+            </div>
+          </div>
+        )}
+
+        <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8 border-t border-slate-200 pt-12">
+          <div>
+            <h4 className="font-bold text-sm uppercase tracking-widest text-slate-400 mb-4">Focus</h4>
+            <p className="text-slate-600 text-sm leading-relaxed">Intra-Utah freight and specialized loads.</p>
+          </div>
+          <div>
+            <h4 className="font-bold text-sm uppercase tracking-widest text-slate-400 mb-4">Equipment</h4>
+            <div className="flex flex-wrap gap-2">
+              {['Box Van', 'Cargo Van', 'Sprinter'].map(t => (
+                <span key={t} className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-600">{t}</span>
+              ))}
+            </div>
+          </div>
+          <div>
+            <h4 className="font-bold text-sm uppercase tracking-widest text-slate-400 mb-4">Privacy</h4>
+            <p className="text-slate-600 text-sm leading-relaxed">Your data is never shared with brokers. Only our carrier network.</p>
+          </div>
+        </div>
+      </main>
+    </div>
   );
 }
