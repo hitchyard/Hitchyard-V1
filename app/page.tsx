@@ -1,44 +1,63 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 const COMMODITIES = [
   "General Freight",
   "Building Materials",
   "Industrial Equipment",
   "Consumer Goods",
+  "Electronics",
+  "Furniture",
   "Other"
 ]
 
-function RadialGauge({ score }: { score: number }) {
-  const radius = 80
-  const strokeWidth = 12
+// Animated radial gauge with score breakdown
+function HPSGauge({ score, animated }: { score: number; animated: boolean }) {
+  const [displayScore, setDisplayScore] = useState(0)
+  const radius = 90
+  const strokeWidth = 14
   const circumference = 2 * Math.PI * radius
   const startAngle = 135
   const endAngle = 405
   const totalAngle = endAngle - startAngle
-  const scoreAngle = startAngle + (score / 100) * totalAngle
   
-  // Calculate the arc path for the background (Steel Blue ring)
+  useEffect(() => {
+    if (animated) {
+      const duration = 1500
+      const startTime = Date.now()
+      const animate = () => {
+        const elapsed = Date.now() - startTime
+        const progress = Math.min(elapsed / duration, 1)
+        const eased = 1 - Math.pow(1 - progress, 3)
+        setDisplayScore(Math.round(score * eased))
+        if (progress < 1) {
+          requestAnimationFrame(animate)
+        }
+      }
+      requestAnimationFrame(animate)
+    } else {
+      setDisplayScore(score)
+    }
+  }, [score, animated])
+
+  const scoreAngle = startAngle + (displayScore / 100) * totalAngle
   const arcLength = (totalAngle / 360) * circumference
   const dashOffset = circumference - arcLength
+  const filledArcLength = (displayScore / 100) * arcLength
   
-  // Calculate the filled arc based on score
-  const filledArcLength = (score / 100) * arcLength
-  
-  // Calculate needle position
   const needleAngle = (scoreAngle * Math.PI) / 180
-  const needleLength = radius - 15
-  const needleX = 100 + needleLength * Math.cos(needleAngle)
-  const needleY = 100 + needleLength * Math.sin(needleAngle)
+  const needleLength = radius - 20
+  const needleX = 110 + needleLength * Math.cos(needleAngle)
+  const needleY = 110 + needleLength * Math.sin(needleAngle)
   
   return (
     <div className="flex flex-col items-center">
-      <svg width="200" height="160" viewBox="0 0 200 160">
-        {/* Background arc (Steel Blue) */}
+      <svg width="220" height="180" viewBox="0 0 220 180">
+        {/* Background arc */}
         <circle
-          cx="100"
-          cy="100"
+          cx="110"
+          cy="110"
           r={radius}
           fill="none"
           stroke="#2A6FAF"
@@ -46,14 +65,14 @@ function RadialGauge({ score }: { score: number }) {
           strokeLinecap="round"
           strokeDasharray={`${arcLength} ${circumference}`}
           strokeDashoffset={dashOffset}
-          transform="rotate(135 100 100)"
-          opacity="0.3"
+          transform="rotate(135 110 110)"
+          opacity="0.2"
         />
         
-        {/* Filled arc (Steel Blue) */}
+        {/* Filled arc */}
         <circle
-          cx="100"
-          cy="100"
+          cx="110"
+          cy="110"
           r={radius}
           fill="none"
           stroke="#2A6FAF"
@@ -61,43 +80,89 @@ function RadialGauge({ score }: { score: number }) {
           strokeLinecap="round"
           strokeDasharray={`${filledArcLength} ${circumference}`}
           strokeDashoffset={dashOffset}
-          transform="rotate(135 100 100)"
+          transform="rotate(135 110 110)"
+          className="transition-all duration-100"
         />
         
         {/* Center dot */}
-        <circle cx="100" cy="100" r="6" fill="#F5F7FA" />
+        <circle cx="110" cy="110" r="8" fill="#F5F5F5" />
         
-        {/* Needle (Muted Orange) */}
+        {/* Needle */}
         <line
-          x1="100"
-          y1="100"
+          x1="110"
+          y1="110"
           x2={needleX}
           y2={needleY}
           stroke="#FF7F50"
-          strokeWidth="3"
+          strokeWidth="4"
           strokeLinecap="round"
+          className="transition-all duration-100"
         />
         
-        {/* Needle tip dot (Muted Orange) */}
-        <circle cx={needleX} cy={needleY} r="4" fill="#FF7F50" />
+        {/* Needle tip */}
+        <circle cx={needleX} cy={needleY} r="5" fill="#FF7F50" className="transition-all duration-100" />
       </svg>
       
-      {/* Score display (Muted Orange) */}
-      <p className="text-5xl font-bold text-accent mt-2">{score}</p>
+      {/* Score display */}
+      <p className="text-6xl font-bold text-accent -mt-2">{displayScore}</p>
+      <p className="text-sm text-muted-foreground mt-1 uppercase tracking-wider">Hitchyard Performance Score</p>
     </div>
   )
 }
 
-function QuickShipmentCheck({
+// Score breakdown bars
+function ScoreBreakdown({ score }: { score: number }) {
+  const breakdown = {
+    reliability: Math.round(score * 0.4),
+    efficiency: Math.round(score * 0.3),
+    relationship: Math.round(score * 0.2),
+    matchSuccess: Math.round(score * 0.1),
+  }
+
+  const bars = [
+    { label: "Reliability", value: breakdown.reliability, max: 40, color: "#2A6FAF" },
+    { label: "Efficiency", value: breakdown.efficiency, max: 30, color: "#2A6FAF" },
+    { label: "Relationship", value: breakdown.relationship, max: 20, color: "#2A6FAF" },
+    { label: "Match Success", value: breakdown.matchSuccess, max: 10, color: "#2A6FAF" },
+  ]
+
+  return (
+    <div className="space-y-4 max-w-md mx-auto">
+      {bars.map((bar) => (
+        <div key={bar.label}>
+          <div className="flex justify-between text-sm mb-1">
+            <span className="text-foreground">{bar.label}</span>
+            <span className="text-muted-foreground">{bar.value}/{bar.max}</span>
+          </div>
+          <div className="h-2 bg-border-subtle rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-1000 ease-out"
+              style={{
+                width: `${(bar.value / bar.max) * 100}%`,
+                backgroundColor: bar.color,
+              }}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// Freight Fit Check form
+function FreightFitCheck({
   onScoreCalculated,
 }: {
   onScoreCalculated: (score: number) => void
 }) {
   const [email, setEmail] = useState("")
-  const [palletCount, setPalletCount] = useState(6)
-  const [pickupZip, setPickupZip] = useState("")
+  const [palletCount, setPalletCount] = useState(4)
+  const [originZip, setOriginZip] = useState("")
+  const [destinationZip, setDestinationZip] = useState("")
   const [commodity, setCommodity] = useState("")
+  const [weight, setWeight] = useState("")
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [isCalculating, setIsCalculating] = useState(false)
 
   const isValidUtahZip = (zip: string): boolean => {
     const zipNum = parseInt(zip, 10)
@@ -107,46 +172,75 @@ function QuickShipmentCheck({
   const calculateScore = () => {
     setErrorMessage(null)
 
-    if (!email || !pickupZip || !commodity) {
-      setErrorMessage("Please fill in all fields.")
+    if (!email || !originZip || !destinationZip || !commodity) {
+      setErrorMessage("Please fill in all required fields.")
       return
     }
 
-    if (!isValidUtahZip(pickupZip)) {
-      setErrorMessage("Please enter a valid Utah ZIP code (84xxx).")
+    if (!isValidUtahZip(originZip)) {
+      setErrorMessage("Please enter a valid Utah origin ZIP code (84xxx).")
       return
     }
 
-    // Score calculation based on pallet count and ZIP
-    let baseScore = 70
-    
-    // Pallet count scoring (4-10 is ideal)
-    if (palletCount >= 4 && palletCount <= 10) {
-      baseScore += 20
-    } else if (palletCount >= 2 && palletCount <= 3) {
-      baseScore += 10
-    } else if (palletCount === 1) {
-      baseScore += 5
-    } else if (palletCount > 10) {
-      baseScore -= 10
-    }
-    
-    // ZIP code scoring (Wasatch Front areas score higher)
-    const zipNum = parseInt(pickupZip, 10)
-    if (zipNum >= 84101 && zipNum <= 84199) {
-      baseScore += 10 // Salt Lake City area
-    } else if (zipNum >= 84601 && zipNum <= 84699) {
-      baseScore += 8 // Provo/Utah County area
-    } else if (zipNum >= 84401 && zipNum <= 84499) {
-      baseScore += 8 // Ogden area
+    if (!isValidUtahZip(destinationZip)) {
+      setErrorMessage("Please enter a valid Utah destination ZIP code (84xxx).")
+      return
     }
 
-    const finalScore = Math.min(100, Math.max(0, baseScore))
-    onScoreCalculated(finalScore)
+    setIsCalculating(true)
+
+    // Simulate calculation delay for animation effect
+    setTimeout(() => {
+      let baseScore = 65
+      
+      // Pallet count scoring (2-10 is ideal)
+      if (palletCount >= 2 && palletCount <= 10) {
+        baseScore += 20
+      } else if (palletCount === 1) {
+        baseScore += 10
+      } else if (palletCount > 10) {
+        baseScore += 5
+      }
+      
+      // ZIP code scoring (Wasatch Front areas score higher)
+      const originNum = parseInt(originZip, 10)
+      const destNum = parseInt(destinationZip, 10)
+      
+      // Origin scoring
+      if (originNum >= 84101 && originNum <= 84199) {
+        baseScore += 8
+      } else if (originNum >= 84601 && originNum <= 84699) {
+        baseScore += 6
+      } else if (originNum >= 84401 && originNum <= 84499) {
+        baseScore += 6
+      }
+      
+      // Destination scoring
+      if (destNum >= 84101 && destNum <= 84199) {
+        baseScore += 7
+      } else if (destNum >= 84601 && destNum <= 84699) {
+        baseScore += 5
+      } else if (destNum >= 84401 && destNum <= 84499) {
+        baseScore += 5
+      } else if (destNum >= 84770 && destNum <= 84784) {
+        baseScore += 4 // St. George area
+      }
+
+      const finalScore = Math.min(100, Math.max(0, baseScore))
+      onScoreCalculated(finalScore)
+      setIsCalculating(false)
+    }, 800)
   }
 
   return (
-    <div className="bg-card border border-border-subtle p-8 max-w-lg mx-auto">
+    <div className="bg-card border border-border-subtle p-8 md:p-10 max-w-xl mx-auto">
+      <h2 className="font-serif text-2xl md:text-3xl text-foreground mb-2 uppercase tracking-wide text-center">
+        Freight Fit Check
+      </h2>
+      <p className="text-muted-foreground text-center mb-8">
+        See how your shipment matches our network
+      </p>
+      
       <div className="space-y-6">
         {/* Email */}
         <div>
@@ -160,14 +254,14 @@ function QuickShipmentCheck({
             placeholder="you@company.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full border border-border-subtle bg-background px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-steel-blue"
+            className="w-full border border-border-subtle bg-background px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-steel-blue transition-colors"
           />
         </div>
 
-        {/* Pallet Count Range */}
+        {/* Pallet Count Slider */}
         <div>
           <label htmlFor="pallet-count" className="block text-sm text-muted-foreground mb-2">
-            Pallet Count: {palletCount}
+            Pallet Count: <span className="text-foreground font-medium">{palletCount}</span>
           </label>
           <input
             id="pallet-count"
@@ -177,7 +271,7 @@ function QuickShipmentCheck({
             max="12"
             value={palletCount}
             onChange={(e) => setPalletCount(parseInt(e.target.value, 10))}
-            className="w-full h-2 bg-border-subtle rounded-lg appearance-none cursor-pointer accent-steel-blue"
+            className="w-full h-2 bg-border-subtle rounded-full appearance-none cursor-pointer accent-steel-blue"
           />
           <div className="flex justify-between text-xs text-muted-foreground mt-1">
             <span>1</span>
@@ -185,23 +279,42 @@ function QuickShipmentCheck({
           </div>
         </div>
 
-        {/* Pickup ZIP Code */}
-        <div>
-          <label htmlFor="pickup-zip" className="block text-sm text-muted-foreground mb-2">
-            Pickup Zip Code
-          </label>
-          <input
-            id="pickup-zip"
-            name="pickup_zip"
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            maxLength={5}
-            placeholder="84xxx"
-            value={pickupZip}
-            onChange={(e) => setPickupZip(e.target.value.replace(/\D/g, "").slice(0, 5))}
-            className="w-full border border-border-subtle bg-background px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-steel-blue"
-          />
+        {/* ZIP Codes Row */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="origin-zip" className="block text-sm text-muted-foreground mb-2">
+              Origin Zip Code
+            </label>
+            <input
+              id="origin-zip"
+              name="origin_zip"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={5}
+              placeholder="84xxx"
+              value={originZip}
+              onChange={(e) => setOriginZip(e.target.value.replace(/\D/g, "").slice(0, 5))}
+              className="w-full border border-border-subtle bg-background px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-steel-blue transition-colors"
+            />
+          </div>
+          <div>
+            <label htmlFor="destination-zip" className="block text-sm text-muted-foreground mb-2">
+              Destination Zip Code
+            </label>
+            <input
+              id="destination-zip"
+              name="destination_zip"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={5}
+              placeholder="84xxx"
+              value={destinationZip}
+              onChange={(e) => setDestinationZip(e.target.value.replace(/\D/g, "").slice(0, 5))}
+              className="w-full border border-border-subtle bg-background px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-steel-blue transition-colors"
+            />
+          </div>
         </div>
 
         {/* Commodity Select */}
@@ -214,7 +327,7 @@ function QuickShipmentCheck({
             name="commodity"
             value={commodity}
             onChange={(e) => setCommodity(e.target.value)}
-            className="w-full border border-border-subtle bg-background px-4 py-3 text-foreground focus:outline-none focus:border-steel-blue"
+            className="w-full border border-border-subtle bg-background px-4 py-3 text-foreground focus:outline-none focus:border-steel-blue transition-colors"
           >
             <option value="">Select commodity type</option>
             {COMMODITIES.map((c) => (
@@ -223,125 +336,284 @@ function QuickShipmentCheck({
           </select>
         </div>
 
+        {/* Weight (optional) */}
+        <div>
+          <label htmlFor="weight" className="block text-sm text-muted-foreground mb-2">
+            Weight (lbs) <span className="text-muted-foreground/60">Optional</span>
+          </label>
+          <input
+            id="weight"
+            name="weight"
+            type="text"
+            inputMode="numeric"
+            placeholder="e.g. 2500"
+            value={weight}
+            onChange={(e) => setWeight(e.target.value.replace(/\D/g, ""))}
+            className="w-full border border-border-subtle bg-background px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-steel-blue transition-colors"
+          />
+        </div>
+
         {/* Error Message */}
         {errorMessage && (
-          <p className="text-sm text-red-400">{errorMessage}</p>
+          <p className="text-sm text-accent">{errorMessage}</p>
         )}
 
         {/* Submit Button */}
         <button
           type="button"
           onClick={calculateScore}
-          className="w-full bg-steel-blue text-primary-foreground py-3 font-medium hover:bg-steel-blue/90 transition-colors uppercase tracking-wide"
+          disabled={isCalculating}
+          className="w-full bg-steel-blue text-primary-foreground py-4 font-medium hover:bg-accent hover:text-accent-foreground transition-colors uppercase tracking-wide disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Can You Move This?
+          {isCalculating ? "Calculating..." : "Calculate Score"}
         </button>
       </div>
     </div>
   )
 }
 
-function CoverageConfidence({ score }: { score: number }) {
+// HPS Results Section
+function HPSResults({ score }: { score: number }) {
   return (
-    <section className="py-16 text-center">
-      <p className="text-sm text-muted-foreground mb-4 uppercase tracking-wide">
-        Coverage Confidence
-      </p>
-      <RadialGauge score={score} />
-      <p className="text-foreground mt-6 max-w-md mx-auto">
-        {score >= 80
-          ? "Strong match. This shipment fits our coverage area and capacity well."
-          : score >= 60
-          ? "Good potential. Some factors may require review before confirmation."
-          : "Limited match. This shipment may fall outside our typical coverage."}
+    <section className="py-20 text-center">
+      <HPSGauge score={score} animated={true} />
+      
+      <div className="mt-12">
+        <ScoreBreakdown score={score} />
+      </div>
+      
+      <p className="text-muted-foreground mt-10 max-w-lg mx-auto leading-relaxed">
+        This score shows how well your shipment fits our vetted drivers and network, 
+        building confidence in our performance-based system.
       </p>
     </section>
   )
 }
 
+// Trade-Off Grid with icons
 function HitchyardStandard() {
+  const weDo = [
+    { icon: "📦", label: "Dry LTL" },
+    { icon: "🗺️", label: "Utah Coverage" },
+    { icon: "🚐", label: "Box Trucks & Sprinters" },
+    { icon: "📊", label: "Performance Scoring" },
+  ]
+
+  const weDoNot = [
+    { icon: "❄️", label: "Reefers" },
+    { icon: "☢️", label: "Hazmat" },
+    { icon: "🚛", label: "53-foot Spot Chaos" },
+    { icon: "🚨", label: "Emergency Hero Loads" },
+  ]
+
   return (
-    <section className="py-16 border-t border-border-subtle">
-      <h2 className="font-serif text-2xl md:text-3xl text-foreground mb-10 uppercase tracking-wide text-center">
+    <section className="py-20 border-t border-border-subtle">
+      <h2 className="font-serif text-2xl md:text-4xl text-foreground mb-4 uppercase tracking-wide text-center">
         The Hitchyard Standard
       </h2>
-      <div className="grid md:grid-cols-2 gap-8 md:gap-12 max-w-3xl mx-auto">
-        <div>
-          <h3 className="text-sm text-muted-foreground mb-4 uppercase tracking-wide">
-            What We Handle
+      <p className="text-muted-foreground text-center mb-12 max-w-xl mx-auto">
+        We focus on what we do best so you get predictable, reliable service every time.
+      </p>
+      
+      <div className="grid md:grid-cols-2 gap-12 max-w-4xl mx-auto">
+        {/* We Do */}
+        <div className="bg-card border border-border-subtle p-8">
+          <h3 className="text-sm text-steel-blue mb-6 uppercase tracking-wider font-medium">
+            We Do
           </h3>
-          <ul className="space-y-3 text-foreground">
-            <li>Dry, palletized shipments</li>
-            <li>Awkward dimensions</li>
-            <li>Partial loads</li>
-            <li>Cargo van and sprinter shipments</li>
-            <li>Box truck loads</li>
-            <li>Utah regional lanes</li>
-          </ul>
+          <div className="grid grid-cols-2 gap-6">
+            {weDo.map((item) => (
+              <div
+                key={item.label}
+                className="group flex flex-col items-center text-center p-4 hover:bg-steel-blue/10 transition-colors cursor-default"
+              >
+                <span className="text-3xl mb-3 group-hover:scale-110 transition-transform">{item.icon}</span>
+                <span className="text-foreground text-sm">{item.label}</span>
+              </div>
+            ))}
+          </div>
         </div>
-        <div>
-          <h3 className="text-sm text-muted-foreground mb-4 uppercase tracking-wide">
-            What We Do Not Handle
+
+        {/* We Do Not */}
+        <div className="bg-card border border-border-subtle p-8">
+          <h3 className="text-sm text-muted-foreground mb-6 uppercase tracking-wider font-medium">
+            We Do Not
           </h3>
-          <ul className="space-y-3 text-foreground">
-            <li>Refrigerated freight</li>
-            <li>Hazmat shipments</li>
-            <li>Full truckload (FTL) only</li>
-            <li>Out-of-state destinations</li>
-            <li>Time-critical same-hour delivery</li>
-          </ul>
+          <div className="grid grid-cols-2 gap-6">
+            {weDoNot.map((item) => (
+              <div
+                key={item.label}
+                className="group flex flex-col items-center text-center p-4 opacity-60 hover:opacity-100 transition-opacity cursor-default"
+              >
+                <span className="text-3xl mb-3 grayscale group-hover:grayscale-0 transition-all">{item.icon}</span>
+                <span className="text-muted-foreground text-sm">{item.label}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </section>
   )
 }
 
-function GeoFAQ() {
-  const faqs = [
+// How It Works Process Section
+function HowItWorks() {
+  const steps = [
     {
-      question: "What kind of shipments does Hitchyard handle in Utah?",
-      answer: "Hitchyard focuses on dry, palletized shipments that don't fit standard LTL easily, including awkward dimensions, partial loads, and small cargo van or sprinter shipments."
+      number: "01",
+      title: "Submit Details",
+      description: "Enter your shipment information in the Freight Fit Check form above.",
     },
     {
-      question: "What areas of Utah do you cover?",
-      answer: "We primarily cover the Wasatch Front, Northern Utah, and common in-state commercial lanes, depending on shipment size, timing, and delivery details."
+      number: "02",
+      title: "Generate Score",
+      description: "Receive your Hitchyard Performance Score based on reliability, efficiency, and match success.",
     },
     {
-      question: "Do you handle same-day or next-day shipments?",
-      answer: "Coverage depends on timing, location, and shipment details. Availability is confirmed case by case."
+      number: "03",
+      title: "Steward Review",
+      description: "A Hitchyard Steward reviews your score and shipment details for optimal matching.",
     },
     {
-      question: "Do you move refrigerated or hazmat freight?",
-      answer: "No. Hitchyard does not handle refrigerated or hazmat shipments."
+      number: "04",
+      title: "Confirm Match",
+      description: "Get matched with a vetted driver who fits your shipment profile perfectly.",
     },
-    {
-      question: "Is Hitchyard a carrier or a broker?",
-      answer: "Hitchyard is a licensed freight broker and is not a motor carrier."
-    },
-    {
-      question: "How is Hitchyard different from load boards?",
-      answer: "Shipments are not posted publicly. Each shipment is reviewed and matched intentionally to avoid delays, price spikes, and last-minute cancellations."
-    },
-    {
-      question: "How do I know if my shipment works?",
-      answer: "Use the Quick Shipment Check above. If it's a good match, we'll confirm next steps. If not, we'll tell you upfront."
-    }
   ]
 
   return (
-    <section className="py-16 border-t border-border-subtle">
-      <h2 className="font-serif text-2xl md:text-3xl text-foreground mb-10 uppercase tracking-wide text-center">
-        Utah Shipping FAQ
+    <section className="py-20 border-t border-border-subtle">
+      <h2 className="font-serif text-2xl md:text-4xl text-foreground mb-4 uppercase tracking-wide text-center">
+        How Hitchyard Protects Your Freight
       </h2>
-      <div className="space-y-8 max-w-3xl mx-auto">
-        {faqs.map((faq, index) => (
-          <div key={index}>
-            <p className="text-foreground font-medium mb-2">Q: {faq.question}</p>
-            <p className="text-muted-foreground">A: {faq.answer}</p>
+      <p className="text-muted-foreground text-center mb-16 max-w-xl mx-auto">
+        A systematic approach to matching your shipment with the right driver.
+      </p>
+      
+      <div className="grid md:grid-cols-4 gap-8 max-w-5xl mx-auto">
+        {steps.map((step, index) => (
+          <div
+            key={step.number}
+            className="relative group"
+          >
+            {/* Connector line */}
+            {index < steps.length - 1 && (
+              <div className="hidden md:block absolute top-8 left-full w-full h-px bg-border-subtle -translate-x-4" />
+            )}
+            
+            <div className="bg-card border border-border-subtle p-6 h-full hover:border-steel-blue transition-colors">
+              <span className="text-4xl font-bold text-steel-blue/30 group-hover:text-steel-blue transition-colors">
+                {step.number}
+              </span>
+              <h3 className="text-foreground font-medium mt-4 mb-2">{step.title}</h3>
+              <p className="text-muted-foreground text-sm leading-relaxed">{step.description}</p>
+            </div>
           </div>
         ))}
       </div>
     </section>
+  )
+}
+
+// FAQ Accordion
+function FAQ() {
+  const [openIndex, setOpenIndex] = useState<number | null>(null)
+
+  const faqs = [
+    {
+      question: "Will my 3 to 8 pallet shipment fit in a box truck or sprinter?",
+      answer: "Our system evaluates each shipment with the Hitchyard Performance Score to ensure the right truck and driver for safe and predictable delivery."
+    },
+    {
+      question: "I have had unreliable carriers before. How can I be sure Hitchyard is different?",
+      answer: "All drivers in our network are vetted and scored for reliability, efficiency, and on-time performance. We only dispatch trusted carriers."
+    },
+    {
+      question: "Can you cover shipments anywhere in Utah, not just Salt Lake?",
+      answer: "Yes, our local network reaches Ogden, Provo, St. George, and every commercial hub in the state."
+    },
+    {
+      question: "How long will it take to get a Freight Fit Check?",
+      answer: "Once you submit your shipment details, you receive a Steward review within 24 to 48 hours."
+    },
+    {
+      question: "What if my freight is fragile or oddly shaped?",
+      answer: "The Hitchyard Performance Score evaluates weight, pallet size, and commodity type to match your shipment to the right truck and driver."
+    },
+    {
+      question: "Do you handle hazardous or refrigerated freight?",
+      answer: "No, we specialize in dry LTL shipments, which allows us to guarantee faster, safer, and more predictable service."
+    },
+    {
+      question: "Why should I trust Hitchyard instead of a big national broker?",
+      answer: "We focus exclusively on the Utah market with vetted drivers and performance data. You get transparency, predictability, and local expertise."
+    }
+  ]
+
+  return (
+    <section className="py-20 border-t border-border-subtle">
+      <h2 className="font-serif text-2xl md:text-4xl text-foreground mb-12 uppercase tracking-wide text-center">
+        Frequently Asked Questions
+      </h2>
+      
+      <div className="max-w-3xl mx-auto space-y-4">
+        {faqs.map((faq, index) => (
+          <div
+            key={index}
+            className="border border-border-subtle bg-card overflow-hidden"
+          >
+            <button
+              type="button"
+              onClick={() => setOpenIndex(openIndex === index ? null : index)}
+              className="w-full flex items-center justify-between p-6 text-left hover:bg-steel-blue/5 transition-colors"
+            >
+              <span className="text-foreground font-medium pr-4">{faq.question}</span>
+              <span className="text-steel-blue text-2xl flex-shrink-0">
+                {openIndex === index ? "−" : "+"}
+              </span>
+            </button>
+            
+            <div
+              className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                openIndex === index ? "max-h-48 opacity-100" : "max-h-0 opacity-0"
+              }`}
+            >
+              <p className="px-6 pb-6 text-muted-foreground leading-relaxed">
+                {faq.answer}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+// Animated background for hero
+function HeroBackground() {
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {/* Subtle gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-background via-background/95 to-background" />
+      
+      {/* Animated grid pattern */}
+      <div className="absolute inset-0 opacity-5">
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `
+              linear-gradient(to right, #2A6FAF 1px, transparent 1px),
+              linear-gradient(to bottom, #2A6FAF 1px, transparent 1px)
+            `,
+            backgroundSize: "60px 60px",
+          }}
+        />
+      </div>
+      
+      {/* Floating elements */}
+      <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-steel-blue/5 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-steel-blue/3 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+    </div>
   )
 }
 
@@ -350,48 +622,70 @@ export default function Page() {
 
   return (
     <main className="min-h-screen bg-background">
-      <div className="max-w-[1100px] mx-auto px-6 py-16 md:py-24">
-        {/* Hero */}
-        <header className="text-center mb-16">
-          <h1 className="font-serif text-3xl md:text-5xl text-foreground mb-6 uppercase tracking-wide leading-tight">
-            Utah Dry Shipments, Done Right.
+      {/* Hero Section */}
+      <section className="relative min-h-[70vh] flex items-center justify-center py-24">
+        <HeroBackground />
+        
+        <div className="relative z-10 text-center px-6">
+          <h1 className="font-serif text-4xl md:text-6xl lg:text-7xl text-foreground mb-6 uppercase tracking-wide leading-tight">
+            Your Shipment. Our Guarantee.
           </h1>
-          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-            Predictable coverage for palletized and awkward shipments across Utah.
+          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
+            2 to 10 pallet shipments anywhere in Utah using vetted box trucks and sprinters. 
+            Predictable delivery. No reefers. No hazmat. No surprises.
           </p>
-        </header>
+          <a
+            href="#freight-fit-check"
+            className="inline-block bg-steel-blue text-primary-foreground px-8 py-4 font-medium hover:bg-accent hover:text-accent-foreground transition-colors uppercase tracking-wide"
+          >
+            Check Your Freight Fit
+          </a>
+        </div>
+      </section>
 
-        {/* Quick Shipment Check */}
-        <section className="mb-16">
-          <QuickShipmentCheck onScoreCalculated={setScore} />
+      <div className="max-w-[1200px] mx-auto px-6">
+        {/* Freight Fit Check Card */}
+        <section id="freight-fit-check" className="py-20">
+          <FreightFitCheck onScoreCalculated={setScore} />
         </section>
 
-        {/* Coverage Confidence (hidden until score calculated) */}
-        {score !== null && <CoverageConfidence score={score} />}
+        {/* HPS Results (hidden until calculated) */}
+        {score !== null && <HPSResults score={score} />}
 
         {/* The Hitchyard Standard */}
         <HitchyardStandard />
 
-        {/* Primary CTA */}
-        <section className="py-16 text-center border-t border-border-subtle">
+        {/* How It Works */}
+        <HowItWorks />
+
+        {/* FAQ */}
+        <FAQ />
+
+        {/* CTA Section */}
+        <section className="py-20 text-center border-t border-border-subtle">
+          <h2 className="font-serif text-2xl md:text-3xl text-foreground mb-4 uppercase tracking-wide">
+            Ready to Get Started?
+          </h2>
+          <p className="text-muted-foreground mb-8 max-w-md mx-auto">
+            Submit your shipment for a full Steward review and get matched with a vetted driver.
+          </p>
           <button
             type="button"
-            className="bg-steel-blue text-primary-foreground px-8 py-4 font-medium hover:bg-steel-blue/90 transition-colors uppercase tracking-wide"
+            className="bg-steel-blue text-primary-foreground px-10 py-4 font-medium hover:bg-accent hover:text-accent-foreground transition-colors uppercase tracking-wide"
           >
-            Request Load Review
+            Request Steward Review
           </button>
         </section>
+      </div>
 
-        {/* Geo FAQ */}
-        <GeoFAQ />
-
-        {/* Footer */}
-        <footer className="pt-16 border-t border-border-subtle text-center">
+      {/* Footer */}
+      <footer className="bg-background border-t border-border-subtle py-12">
+        <div className="max-w-[1200px] mx-auto px-6 text-center">
           <p className="text-sm text-muted-foreground">
             Hitchyard is a licensed freight broker and is not a motor carrier.
           </p>
-        </footer>
-      </div>
+        </div>
+      </footer>
     </main>
   )
 }
