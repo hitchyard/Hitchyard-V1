@@ -1,7 +1,7 @@
 
 
 "use client";
-import { useState } from "react";
+import { useState, ChangeEvent } from "react";
 import { submitHitchyardLead } from '../lib/supabase-actions';
 
 function CheckMyLoadForm({
