@@ -471,8 +471,8 @@ function HowItWorks() {
     },
     {
       number: "03",
-      title: "Steward Review",
-      description: "A Hitchyard Steward reviews your score and shipment details for optimal matching.",
+      title: "Advisor Review",
+      description: "A Hitchyard Logistics Advisor reviews your score and shipment details for optimal matching.",
     },
     {
       number: "04",
@@ -534,7 +534,7 @@ function FAQ() {
     },
     {
       question: "How long will it take to get a Freight Fit Check?",
-      answer: "Once you submit your shipment details, you receive a Steward review within 24 to 48 hours."
+      answer: "Once you submit your shipment details, a Hitchyard Logistics Advisor reviews your shipment within 24 to 48 hours."
     },
     {
       question: "What if my freight is fragile or oddly shaped?",
