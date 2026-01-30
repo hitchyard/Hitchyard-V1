@@ -6,18 +6,29 @@ import { submitHitchyardLead } from '../lib/supabase-actions';
 function CheckMyLoadForm({ onScoreCalculated }: { onScoreCalculated: (score: number) => void }) {
   const [formData, setFormData] = useState({ origin: "", destination: "", weight: "", payout: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, [e.target.name]: e.target.value });
+  
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => 
+    setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const calculateScore = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    
     const weightNum = parseFloat(formData.weight) || 0;
     const payoutNum = parseFloat(formData.payout) || 0;
     const score = Math.min(Math.round((payoutNum / (weightNum || 1)) * 10), 100);
+
     try {
-      await submitHitchyardLead({ ...formData, score });
+      // UPDATED THIS LINE: Passing 4 arguments instead of 1 object
+      await submitHitchyardLead(
+        formData.origin, 
+        formData.destination, 
+        weightNum, 
+        payoutNum
+      );
       onScoreCalculated(score);
     } catch (err) {
+      console.error(err);
       onScoreCalculated(score);
     } finally {
       setIsSubmitting(false);
@@ -31,7 +42,7 @@ function CheckMyLoadForm({ onScoreCalculated }: { onScoreCalculated: (score: num
         <input name="destination" required placeholder="Destination" className="bg-background border p-3 rounded" onChange={handleChange} />
         <input name="weight" type="number" required placeholder="Weight (lbs)" className="bg-background border p-3 rounded" onChange={handleChange} />
         <input name="payout" type="number" required placeholder="Payout ($)" className="bg-background border p-3 rounded" onChange={handleChange} />
-        <button type="submit" disabled={isSubmitting} className="md:col-span-2 bg-primary text-white p-4 rounded font-bold">
+        <button type="submit" disabled={isSubmitting} className="md:col-span-2 bg-black text-white p-4 rounded font-bold">
           {isSubmitting ? "Calculating..." : "Check My Load"}
         </button>
       </form>
