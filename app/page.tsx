@@ -88,62 +88,81 @@ function RadialGauge({ score }: { score: number }) {
   )
 }
 
+import { saveFreightAudit } from "../lib/freightAudit";
+
 function QuickShipmentCheck({
   onScoreCalculated,
 }: {
   onScoreCalculated: (score: number) => void
 }) {
-  const [email, setEmail] = useState("")
-  const [palletCount, setPalletCount] = useState(6)
-  const [pickupZip, setPickupZip] = useState("")
-  const [commodity, setCommodity] = useState("")
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [email, setEmail] = useState("");
+  const [palletCount, setPalletCount] = useState(6);
+  const [pickupZip, setPickupZip] = useState("");
+  const [commodity, setCommodity] = useState("");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const isValidUtahZip = (zip: string): boolean => {
-    const zipNum = parseInt(zip, 10)
-    return zip.length === 5 && zipNum >= 84001 && zipNum <= 84784
-  }
+    const zipNum = parseInt(zip, 10);
+    return zip.length === 5 && zipNum >= 84001 && zipNum <= 84784;
+  };
 
-  const calculateScore = () => {
-    setErrorMessage(null)
-
+  const handleSubmit = async () => {
+    setErrorMessage(null);
     if (!email || !pickupZip || !commodity) {
-      setErrorMessage("Please fill in all fields.")
-      return
+      setErrorMessage("Please fill in all fields.");
+      return;
     }
-
     if (!isValidUtahZip(pickupZip)) {
-      setErrorMessage("Please enter a valid Utah ZIP code (84xxx).")
-      return
+      setErrorMessage("Please enter a valid Utah ZIP code (84xxx).");
+      return;
     }
 
     // Score calculation based on pallet count and ZIP
-    let baseScore = 70
-    
-    // Pallet count scoring (4-10 is ideal)
+    let baseScore = 70;
     if (palletCount >= 4 && palletCount <= 10) {
-      baseScore += 20
+      baseScore += 20;
     } else if (palletCount >= 2 && palletCount <= 3) {
-      baseScore += 10
+      baseScore += 10;
     } else if (palletCount === 1) {
-      baseScore += 5
+      baseScore += 5;
     } else if (palletCount > 10) {
-      baseScore -= 10
+      baseScore -= 10;
     }
-    
-    // ZIP code scoring (Wasatch Front areas score higher)
-    const zipNum = parseInt(pickupZip, 10)
+    const zipNum = parseInt(pickupZip, 10);
     if (zipNum >= 84101 && zipNum <= 84199) {
-      baseScore += 10 // Salt Lake City area
+      baseScore += 10;
     } else if (zipNum >= 84601 && zipNum <= 84699) {
-      baseScore += 8 // Provo/Utah County area
+      baseScore += 8;
     } else if (zipNum >= 84401 && zipNum <= 84499) {
-      baseScore += 8 // Ogden area
+      baseScore += 8;
     }
+    const finalScore = Math.min(100, Math.max(0, baseScore));
+    onScoreCalculated(finalScore);
 
-    const finalScore = Math.min(100, Math.max(0, baseScore))
-    onScoreCalculated(finalScore)
-  }
+    setSubmitting(true);
+    try {
+      // Save to Supabase
+      await saveFreightAudit({
+        shipper_email: email,
+        pallet_count: palletCount,
+        zip_code: pickupZip,
+        commodity,
+      });
+      // Notify via API
+      await fetch("/api/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ zip_code: pickupZip }),
+      });
+      setSuccess(true);
+    } catch (err: any) {
+      setErrorMessage(err.message || "Submission failed. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="bg-card border border-border-subtle p-8 max-w-lg mx-auto">
@@ -161,6 +180,7 @@ function QuickShipmentCheck({
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full border border-border-subtle bg-background px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-steel-blue"
+            disabled={success}
           />
         </div>
 
@@ -178,6 +198,7 @@ function QuickShipmentCheck({
             value={palletCount}
             onChange={(e) => setPalletCount(parseInt(e.target.value, 10))}
             className="w-full h-2 bg-border-subtle rounded-lg appearance-none cursor-pointer accent-steel-blue"
+            disabled={success}
           />
           <div className="flex justify-between text-xs text-muted-foreground mt-1">
             <span>1</span>
@@ -201,6 +222,7 @@ function QuickShipmentCheck({
             value={pickupZip}
             onChange={(e) => setPickupZip(e.target.value.replace(/\D/g, "").slice(0, 5))}
             className="w-full border border-border-subtle bg-background px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-steel-blue"
+            disabled={success}
           />
         </div>
 
@@ -215,6 +237,7 @@ function QuickShipmentCheck({
             value={commodity}
             onChange={(e) => setCommodity(e.target.value)}
             className="w-full border border-border-subtle bg-background px-4 py-3 text-foreground focus:outline-none focus:border-steel-blue"
+            disabled={success}
           >
             <option value="">Select commodity type</option>
             {COMMODITIES.map((c) => (
@@ -228,17 +251,25 @@ function QuickShipmentCheck({
           <p className="text-sm text-red-400">{errorMessage}</p>
         )}
 
+        {/* Success Message */}
+        {success && (
+          <div className="text-green-600 text-sm border border-green-200 bg-green-50 rounded p-3">
+            As your Advisor, I am manually verifying Utah carrier capacity for this lane. I will email your full report to {email} shortly.
+          </div>
+        )}
+
         {/* Submit Button */}
         <button
           type="button"
-          onClick={calculateScore}
+          onClick={handleSubmit}
           className="w-full bg-steel-blue text-primary-foreground py-3 font-medium hover:bg-steel-blue/90 transition-colors uppercase tracking-wide"
+          disabled={submitting || success}
         >
-          Can You Move This?
+          {success ? "AUDIT LOGGED" : submitting ? "LOGGING..." : "Can You Move This?"}
         </button>
       </div>
     </div>
-  )
+  );
 }
 
 function CoverageConfidence({ score }: { score: number }) {
