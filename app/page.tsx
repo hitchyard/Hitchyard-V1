@@ -1,4 +1,131 @@
-"use client";
+import { useState, ChangeEvent } from "react";
+import { submitHitchyardLead } from '../lib/supabase-actions';
+
+function CheckMyLoadForm({
+  onScoreCalculated,
+}: {
+  onScoreCalculated: (score: number) => void;
+}) {
+  const [formData, setFormData] = useState({
+    origin: "",
+    destination: "",
+    weight: "",
+    payout: "",
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const calculateScore = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    const weightNum = parseFloat(formData.weight) || 0;
+    const payoutNum = parseFloat(formData.payout) || 0;
+    const score = Math.min(Math.round((payoutNum / (weightNum || 1)) * 10), 100);
+
+    try {
+      await submitHitchyardLead({
+        origin: formData.origin,
+        destination: formData.destination,
+        weight: formData.weight,
+        payout: formData.payout,
+        score: score
+      });
+      onScoreCalculated(score);
+    } catch (err) {
+      console.error("Submission error:", err);
+      onScoreCalculated(score);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="bg-card border border-border rounded-2xl p-8 shadow-sm">
+      <form onSubmit={calculateScore} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground/80">Origin</label>
+            <input name="origin" required placeholder="City, State" className="w-full bg-background border border-border rounded-lg px-4 py-3 outline-none" onChange={handleChange} />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground/80">Destination</label>
+            <input name="destination" required placeholder="City, State" className="w-full bg-background border border-border rounded-lg px-4 py-3 outline-none" onChange={handleChange} />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground/80">Weight (lbs)</label>
+            <input name="weight" type="number" required placeholder="e.g. 2500" className="w-full bg-background border border-border rounded-lg px-4 py-3 outline-none" onChange={handleChange} />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground/80">Payout ($)</label>
+            <input name="payout" type="number" required placeholder="e.g. 1200" className="w-full bg-background border border-border rounded-lg px-4 py-3 outline-none" onChange={handleChange} />
+          </div>
+        </div>
+        <button type="submit" disabled={isSubmitting} className="w-full bg-primary text-primary-foreground font-semibold py-4 rounded-lg hover:opacity-90 disabled:opacity-50">
+          {isSubmitting ? "Calculating..." : "Check My Load"}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+function VehicleTypes() {
+  return (
+    <div className="border-t border-border/40 pt-10">
+      <h3 className="text-sm font-medium text-foreground mb-4 uppercase">Vehicle Types</h3>
+      <div className="flex flex-wrap gap-3">
+        {['Box Van', 'Cargo Van', 'Sprinter'].map((type) => (
+          <span key={type} className="px-4 py-2 bg-secondary/50 border border-border rounded-full text-sm">{type}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FAQSection() {
+  const faqs = [
+    { question: "What is Hitchyard?", answer: "We are a specialized freight network for Box and Cargo vans in the Utah region." },
+    { question: "How does the score work?", answer: "Our algorithm calculates the market fairness of your load based on weight-to-payout ratios." }
+  ];
+  return (
+    <div className="mt-20 space-y-8">
+      <h2 className="text-2xl font-bold">Frequently Asked Questions</h2>
+      <div className="grid gap-6">
+        {faqs.map((faq, i) => (
+          <div key={i} className="space-y-2">
+            <h4 className="font-semibold text-lg">{faq.question}</h4>
+            <p className="text-muted-foreground">{faq.answer}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function Page() {
+  const [showCTA, setShowCTA] = useState(false);
+  return (
+    <main className="min-h-screen bg-background">
+      <div className="max-w-[900px] mx-auto px-6 py-16 md:py-24">
+        <header className="mb-12">
+          <p className="text-sm tracking-widest text-muted-foreground uppercase mb-8">HITCHYARD</p>
+          <h1 className="text-5xl md:text-6xl font-bold mb-6">Know if your load is <span className="text-primary">worth the drive.</span></h1>
+          <p className="text-xl text-muted-foreground max-w-2xl leading-relaxed">The first load-scoring tool built specifically for Utah owner-operators.</p>
+        </header>
+        <CheckMyLoadForm onScoreCalculated={() => setShowCTA(true)} />
+        {showCTA && <div className="mt-8 p-6 bg-primary/10 border border-primary/20 rounded-xl text-primary text-center">Score calculated! Matching your load data with Utah market averages...</div>}
+        <div className="mt-20"><VehicleTypes /></div>
+        <FAQSection />
+        <footer className="mt-32 pt-8 border-t border-border flex justify-between text-sm text-muted-foreground">
+          <p>© 2024 Hitchyard Logistics</p>
+        </footer>
+      </div>
+    </main>
+  );
+}
 
 import { useState } from "react";
 import { submitHitchyardLead } from '../lib/supabase-actions';
