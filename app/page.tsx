@@ -667,14 +667,14 @@ export default function Page() {
             Ready to Get Started?
           </h2>
           <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-            Submit your shipment for a full Steward review and get matched with a vetted driver.
+            Your shipment is scored and matched with the right driver for predictable delivery.
           </p>
-          <button
-            type="button"
-            className="bg-steel-blue text-primary-foreground px-10 py-4 font-medium hover:bg-accent hover:text-accent-foreground transition-colors uppercase tracking-wide"
+          <a
+            href="#freight-fit-check"
+            className="inline-block bg-steel-blue text-primary-foreground px-10 py-4 font-medium hover:bg-accent hover:text-accent-foreground transition-colors uppercase tracking-wide"
           >
-            Request Steward Review
-          </button>
+            Check Your Freight Fit
+          </a>
         </section>
       </div>
 
